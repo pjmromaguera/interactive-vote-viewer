@@ -1,22 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
-
-const rawData = [
-  { precinct: "10030001", position: "MAYOR of BATANGAS - BALAYAN", candidate: "ERMITA, LISA (NPC)", votes: 295 },
-  { precinct: "10030001", position: "MAYOR of BATANGAS - BALAYAN", candidate: "FRONDA, LESLEE (NP)", votes: 225 },
-  { precinct: "10030002", position: "MAYOR of BATANGAS - BALAYAN", candidate: "ERMITA, LISA (NPC)", votes: 312 },
-  { precinct: "10030002", position: "MAYOR of BATANGAS - BALAYAN", candidate: "FRONDA, LESLEE (NP)", votes: 201 },
-];
+import React, { useState, useEffect } from "react";
 
 export default function Page() {
-  const positions = Array.from(new Set(rawData.map((d) => d.position))).filter(
-    (p) => !p.includes("SENATOR") && !p.includes("PARTY LIST")
-  );
-  const candidates = Array.from(new Set(rawData.map((d) => d.candidate)));
+  const [rawData, setRawData] = useState([]);
+  const [selectedPositions, setSelectedPositions] = useState(new Set());
+  const [selectedCandidates, setSelectedCandidates] = useState(new Set());
 
-  const [selectedPositions, setSelectedPositions] = useState(new Set(positions));
-  const [selectedCandidates, setSelectedCandidates] = useState(new Set(candidates));
+  useEffect(() => {
+    fetch("/interactive_vote_data.json")
+      .then((res) => res.json())
+      .then((data) => {
+        setRawData(data);
+        const positions = Array.from(new Set(data.map((d) => d.position))).filter(
+          (p) => !p.includes("SENATOR") && !p.includes("PARTY LIST")
+        );
+        const candidates = Array.from(new Set(data.map((d) => d.candidate)));
+        setSelectedPositions(new Set(positions));
+        setSelectedCandidates(new Set(candidates));
+      });
+  }, []);
 
   const toggle = (item, set, current) => {
     const newSet = new Set(current);
@@ -34,21 +37,26 @@ export default function Page() {
     pivoted[precinct][candidate] = votes;
   });
 
+  const positions = Array.from(selectedPositions);
+  const candidates = Array.from(new Set(rawData.map((d) => d.candidate)));
+
   return (
     <div className="p-4 space-y-6">
       <div className="grid grid-cols-2 gap-6">
         <div>
           <h2 className="font-semibold mb-2">Filter by Position</h2>
-          {positions.map((p) => (
-            <label key={p} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedPositions.has(p)}
-                onChange={() => toggle(p, setSelectedPositions, selectedPositions)}
-              />
-              {p}
-            </label>
-          ))}
+          {Array.from(new Set(rawData.map((d) => d.position)))
+            .filter((p) => !p.includes("SENATOR") && !p.includes("PARTY LIST"))
+            .map((p) => (
+              <label key={p} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedPositions.has(p)}
+                  onChange={() => toggle(p, setSelectedPositions, selectedPositions)}
+                />
+                {p}
+              </label>
+            ))}
         </div>
         <div>
           <h2 className="font-semibold mb-2">Filter by Candidate</h2>
